@@ -1,0 +1,8 @@
+# Ignore OLD_CODE directory
+OLD_CODE/
+
+# Ignore python cache
+__pycache__/
+
+# Ignore gdoc files
+*.gdoc

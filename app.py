@@ -299,7 +299,7 @@ def correct_text_with_ai():
             print("Error: GOOGLE_API_KEY environment variable not set.")
             sys.exit(1)
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        model = genai.GenerativeModel('gemini-2.5-flash-lite')
     except Exception as e:
         print(f"Error initializing Gemini: {e}")
         return
@@ -322,10 +322,23 @@ def correct_text_with_ai():
             content = f.read()
 
         prompt = (
-            "Correct the grammar, spelling, and punctuation of this OCR-extracted text. "
-            "Organize it into coherent paragraphs and apply basic formatting. "
-            "The output should only be the corrected text, with no additional commentary.\n\n"
-            f'"""{content}"""'
+    """
+Você é um editor de texto profissional com vasta experiência na revisão e formatação de documentos digitalizados por OCR. Seu objetivo é pegar o texto fornecido abaixo, que contém erros comuns de reconhecimento (como ortografia incorreta, falta de pontuação e quebras de linha irregulares), e transformá-lo em um texto limpo, coeso e bem formatado.
+
+Siga estas regras estritas para processar o texto:
+
+1.  **Correção e Gramática**: Corrija minuciosamente todos os erros de ortografia, gramática, acentuação e pontuação.
+2.  **Estrutura de Parágrafos**: Reorganize e combine frases para criar parágrafos lógicos e fluidos, como se fossem parte de um livro. Mantenha a separação de ideias em parágrafos distintos.
+3.  **Formatação de Diálogos**: Identifique e formate todos os diálogos usando o travessão (—) no início de cada fala.
+4.  **Limpeza Adicional**: Remova quaisquer artefatos de OCR, como números de página, cabeçalhos, rodapés, ou caracteres estranhos.
+5.  **Coerência de Personagens**: Se houver nomes de personagens ou locais, certifique-se de que sejam consistentes em todo o texto (por exemplo, "Sofia" e "Alberto").
+6.  **Idioma**: O texto final deve estar em português.
+
+A sua resposta deve conter **somente** o texto final corrigido e formatado. Não inclua qualquer tipo de introdução, comentários, explicações ou notas adicionais.
+
+Texto para processar:
+
+""" + f'"""{content}"""'
         )
 
         try:
@@ -350,32 +363,38 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="A tool to process screenshots with OCR and AI correction.")
     parser.add_argument(
-        "step",
-        choices=["all", "configure", "capture", "divide", "ocr", "correct"],
-        help="The step to execute."
+        "steps",
+        nargs='+',
+        choices=["all", "configure", "capture", "divide", "ocr", "correct", "pipeline"],
+        help="The step(s) to execute. 'pipeline' runs capture, divide, ocr, and correct."
     )
 
     args = parser.parse_args()
 
-    print(f"Executing step: {args.step}")
+    print(f"Executing step(s): {', '.join(args.steps)}")
 
-    # The logic for each step will be added here.
-    if args.step == "all":
+    # Handle 'all' or 'pipeline' to run the full sequence
+    if "all" in args.steps or "pipeline" in args.steps:
         print("Running the full pipeline...")
+        # We don't run configure_mouse() in the main pipeline
         capture_screenshots()
         divide_screenshots_by_chapter()
         perform_ocr()
         correct_text_with_ai()
         print("\nFull pipeline finished successfully!")
-    elif args.step == "configure":
-        configure_mouse()
-    elif args.step == "capture":
-        capture_screenshots()
-    elif args.step == "divide":
-        divide_screenshots_by_chapter()
-    elif args.step == "ocr":
-        perform_ocr()
-    elif args.step == "correct":
-        correct_text_with_ai()
+    else:
+        # Execute steps in the order they are provided
+        for step in args.steps:
+            if step == "configure":
+                configure_mouse()
+            elif step == "capture":
+                capture_screenshots()
+            elif step == "divide":
+                divide_screenshots_by_chapter()
+            elif step == "ocr":
+                perform_ocr()
+            elif step == "correct":
+                correct_text_with_ai()
 
     print("\nScript finished.")
+
